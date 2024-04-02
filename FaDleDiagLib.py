@@ -671,9 +671,10 @@ class diagCmdLibClass(object):
 		
         b0_addr = self.ToAddr(FIObj.die, FIObj.block_no1, FIObj.wl, FIObj.string, 0)
        
-        if AttrObj.FDReset:
+        if AttrObj.FDReset == 1:
             self.Manual_POR_FDh(FIObj.fim, FIObj.ce, FIObj.die)
-                                                        
+        
+        
         seq = [CMD4, die_no, CmdDynRead, int(FIObj.PageType), CmdReadAddr, ADDR6, b0_addr[0], b0_addr[1], b0_addr[2], b0_addr[3], b0_addr[4], b0_addr[5], CMD1, CmdArrayRead, WAIT_RB, CMD1, CmdReadColAddr, ADDR6, b0_addr[0], b0_addr[1], b0_addr[2], b0_addr[3], b0_addr[4], b0_addr[5], CMD1, CmdRegRead, DELAY, 0x0, 0x1, DATA_OUT, 0x47, 0xA0, CMDEND]        
         
         seq = seq + [0 for i in range(0, 512-len(seq)) if 512 > len(seq)]
@@ -2653,8 +2654,42 @@ class diagCmdLibClass(object):
         
         return paramValue
         
-    def SetParam(self, fim, CE, die, param_addr, param_val):
+    def GetParam_Set(self, fim, CE, die, param_addr):
     
+        opcode = 0xBB
+        setget = 1
+        Param = 0
+        diagCmd = PyServiceWrap.DIAG_FBCC_CDB()
+        diagCmd.cdb = [0] * 16
+        diagCmd.cdb[0] = opcode
+        diagCmd.cdb[1] = fim
+        diagCmd.cdb[2] = CE
+        diagCmd.cdb[3] = setget
+        diagCmd.cdb[4] = Param
+        diagCmd.cdb[5] = die
+        diagCmd.cdb[6] = param_addr
+        diagCmd.cdb[7] = param_addr >> 8
+        diagCmd.cdbLen = len(diagCmd.cdb)
+
+        buf = PyServiceWrap.Buffer.CreateBuffer(1, patternType = PyServiceWrap.ALL_0, isSector = True)
+    
+        try:
+            sctpCommand = PyServiceWrap.SCTPCommand.SCTPCommand(diagCmd, buf, PyServiceWrap.DIRECTION_OUT)
+            sctpCommand.Execute()
+            sctpCommand.HandleOverlappedExecute()
+            sctpCommand.HandleAndParseResponse()
+            #print "GetParam: PASS"
+        except PyServiceWrap.CmdException as ex:
+            print "GetParam: FAIL", ex.GetFailureDescription()
+       
+        paramValue = buf.GetOneByteToInt(0)
+        
+        return paramValue
+       
+    def SetParam(self, fim, CE, die, param_addr, param_val):
+        
+        paramValue = self.GetParam(fim, CE, die, param_addr)
+        
         opcode = 0xBB
         setget = 0
         Param = 0
@@ -2682,9 +2717,9 @@ class diagCmdLibClass(object):
         except PyServiceWrap.CmdException as ex:
             print "SetParam: FAIL", ex.GetFailureDescription()
         
-        paramValue = self.GetParam(fim, CE, die, param_addr)
+        paramValue = self.GetParam_Set(fim, CE, die, param_addr)
         
-        print("SetParam = \t {}".format(hex(param_addr)) + "Value = \t {}".format(hex(paramValue)) )
+        print("SetParam = \t {}".format(hex(param_addr)) + " Value = \t {}".format(hex(paramValue)) )
         
         return paramValue
      
