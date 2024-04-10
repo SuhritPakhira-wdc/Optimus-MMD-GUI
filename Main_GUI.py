@@ -32,6 +32,8 @@ def show_dle_buttons():
         run_bombe_tool,
         run_ber_check,
         run_epr_operation,
+        run_custom_TLC_read,
+        run_custom_TLC_cvd,
         run_regfuse_dump,
         run_bes_ber,
         run_wafer_lot,
@@ -44,6 +46,8 @@ def show_dle_buttons():
         "Bombe Tool",
         "BER Check",
         "EPR Operation",
+        "Custom TLC Read",
+        "Custom TLC CVD",
         "Regfuse Dump",
         "BES BER",
         "Wafer Lot",
@@ -131,6 +135,16 @@ def run_epr_operation():
     # Add your command for EPR Operation here
     print("Running EPR Operation command")
     subprocess.Popen(["python", "EPR_GUI.py"], shell=True)
+
+def run_custom_TLC_read():
+    # Add your command for EPR Operation here
+    print("Running EPR Operation command")
+    subprocess.Popen(["python", "Custom_Read.py"], shell=True)
+
+def run_custom_TLC_cvd():
+    # Add your command for EPR Operation here
+    print("Running EPR Operation command")
+    subprocess.Popen(["python", "CVD_GUI_with_Custom_Shifts.py"], shell=True)
 
 
 # Function to execute the command for Regfuse Dump button
