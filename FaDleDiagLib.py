@@ -2974,7 +2974,7 @@ class diagCmdLibClass(object):
         #file = input("Capture GoLogic if needed and then press 1:" )
         #readbuf = obj.NandStatus()
         if SLC_Flag == 3:
-            self.TestModeEntry(fim, ce, die)
+            self.TestModeEntry(fim, ce)
             self.TempPara(fim, ce, die)
             readbuf = self.DistRead(fim, ce, die, block_no, wl, string, SLC_Flag)
             readbuf.WriteToFile("NDWL.bin", 36*512)
@@ -3048,20 +3048,28 @@ class diagCmdLibClass(object):
         
         if die==0:   
             ad5=0x00
+            ad6=0x00
         elif die==1:
-            ad5=0x20
-        elif die==2:
             ad5=0x40
-        elif die==3:
-            ad5 =0x60
-        elif die==4:
+            ad6=0x00
+        elif die==2:
             ad5=0x80
-        elif die==5:
-            ad5=0xA0
-        elif die==6:
+            ad6=0x00
+        elif die==3:
             ad5=0xC0
+            ad6=0x00
+        elif die==4:
+            ad5=0x00
+            ad6=0x10
+        elif die==5:
+            ad5=0x40
+            ad6=0x10
+        elif die==6:
+            ad5=0x80
+            ad6=0x10
         elif die==7:
-            ad5=0xE0
+            ad5=0xC0
+            ad6=0x10
         else:
             print("Die: Invalid Value")
             
@@ -3071,7 +3079,8 @@ class diagCmdLibClass(object):
 		
         self.Manual_POR_FDh(fim, ce, die)
         
-        seq = [CMD5, die_no, 0x61, 0x40, 0x8F, 0x55, ADDR1, 0x00, DATA_IN, 0x00, 0x01, 0x01, CMD3, 0x5A, 0xBE, 0x00, ADDR5, 0x00, 0x00, 0x36, 0x02, ad5, CMD1, 0x30, WAIT_RB, CMD1, 0x05, ADDR5, 0x00, 0x00, 0x36, 0x02, ad5, CMD1, 0xE0, DELAY, 0x0, 0x1, DATA_OUT, 0x47, 0xA0, CMDEND]
+        seq = [CMD4, 0x61, 0x40, 0x8F, 0x55, ADDR1, 0x00, DATA_IN, 0x00, 0x01, 0x01, CMD3, 0x5A, 0xBE, 0x00, ADDR6, 0x00, 0x00, 0x36, 0x02, ad5, ad6, CMD1, 0x30, WAIT_RB, CMD1, 0x05, ADDR6, 0x00, 0x00, 0x36, 0x02, ad5, ad6, CMD1, 0xE0, DELAY, 0x0, 0x1, DATA_OUT, 0x47, 0xA0, CMDEND]
+       
        
         seqbuf = PyServiceWrap.Buffer.CreateBuffer(1, patternType=PyServiceWrap.ALL_0, isSector=True)
         for idx, sq in enumerate(seq):
@@ -3083,6 +3092,9 @@ class diagCmdLibClass(object):
         buf = PyServiceWrap.Buffer.CreateBuffer(numOfSectors, patternType=PyServiceWrap.ALL_0, isSector=True)
         cdb = [0x94, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         retbuf = self.diagobj.sendDiagnostics(cdb, len(cdb), buf, ioDirection = 0)
+		
+        self.Flash_CMD_Reset(fim, ce, die)
+		
         WaferInformation = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         WaferInformation[0] = ce
         WaferInformation[1] = fim
@@ -3095,7 +3107,7 @@ class diagCmdLibClass(object):
         WaferInformation[8] = self.csv_parameter_time(retbuf, 0x02C, 0x031)  # Sorted time
         WaferInformation[9] = self.csv_parameter(retbuf, 0x135, 0x138) #Parameter Version
         WaferInformation[10] = self.csv_parameter(retbuf, 0x13A, 0x13C)  #DSversion
-        retbuf.WriteToFile("Reg_Waferinformation" + "_" + str(ce) + "_" + str(fim) + "_" + str(die) + "_" + str(datetime_.datetime.now().strftime("%d%m%Y-%H%M%S")) + ".bin", 36*512)
+        retbuf.WriteToFile("Reg_Waferinformation" + "_" + str(ce) + "_" + str(fim) + "_" + str(die) + "_" + ".bin", 36*512)
         
         #retbuf.WriteToFile("Waferinformation.bin", 36*512)
          
@@ -3110,28 +3122,36 @@ class diagCmdLibClass(object):
         print("Wafer information read operation done")
         ouputcsv.close()
         os.chdir(cwd)
-        time.sleep(5)
-        
+        #time.sleep(5)
+		
         return
    
     def Memceldata(self, fim, die):
 
         if die==0:   
             ad5=0x00
+            ad6=0x00
         elif die==1:
-            ad5=0x20
-        elif die==2:
             ad5=0x40
-        elif die==3:
-            ad5 =0x60
-        elif die==4:
+            ad6=0x00
+        elif die==2:
             ad5=0x80
-        elif die==5:
-            ad5=0xA0
-        elif die==6:
+            ad6=0x00
+        elif die==3:
             ad5=0xC0
+            ad6=0x00
+        elif die==4:
+            ad5=0x00
+            ad6=0x10
+        elif die==5:
+            ad5=0x40
+            ad6=0x10
+        elif die==6:
+            ad5=0x80
+            ad6=0x10
         elif die==7:
-            ad5=0xE0
+            ad5=0xC0
+            ad6=0x10
         else:
             print("Die: Invalid Value")
 
@@ -3139,7 +3159,7 @@ class diagCmdLibClass(object):
             print("Die: Invalid Value")        
         die_no = 0xF0 | (die + 1)
 		
-        seq = [CMD5, die_no, 0x61, 0x40, 0x8F, 0x55, ADDR1, 0x00, DATA_IN, 0x00, 0x01, 0x01, CMD3, 0x5A, 0xBE, 0x00, ADDR5, 0x00, 0x00, 0x88, 0x00, ad5, CMD1, 0x30, WAIT_RB, CMD1, 0x05, ADDR5, 0x00, 0x00, 0x88, 0x00, ad5, CMD1, 0xE0, DELAY, 0x0, 0x1, DATA_OUT, 0x47, 0xA0, CMDEND]
+        seq = [CMD5, die_no, 0x61, 0x40, 0x8F, 0x55, ADDR1, 0x00, DATA_IN, 0x00, 0x01, 0x01, CMD3, 0x5A, 0xBE, 0x00, ADDR6, 0x00, 0x00, 0x88, 0x00, ad5, ad6, CMD1, 0x30, WAIT_RB, CMD1, 0x05, ADDR6, 0x00, 0x00, 0x88, 0x00, ad5, ad6, CMD1, 0xE0, DELAY, 0x0, 0x1, DATA_OUT, 0x47, 0xA0, CMDEND]
 
         seqbuf = PyServiceWrap.Buffer.CreateBuffer(1, patternType=PyServiceWrap.ALL_0, isSector=True)
         for idx, sq in enumerate(seq):
@@ -3158,21 +3178,29 @@ class diagCmdLibClass(object):
         
     def RegFuseRead(self, fim, ce, die, avpgm):        
         if die==0:   
-                ad5=0x00
+            ad5=0x00
+            ad6=0x00
         elif die==1:
-                ad5=0x20
+            ad5=0x40
+            ad6=0x00
         elif die==2:
-                ad5=0x40
+            ad5=0x80
+            ad6=0x00
         elif die==3:
-                ad5 =0x60
+            ad5=0xC0
+            ad6=0x00
         elif die==4:
-                ad5=0x80
+            ad5=0x00
+            ad6=0x10
         elif die==5:
-                ad5=0xA0
+            ad5=0x40
+            ad6=0x10
         elif die==6:
-                ad5=0xC0
+            ad5=0x80
+            ad6=0x10
         elif die==7:
-                ad5=0xE0
+            ad5=0xC0
+            ad6=0x10
         else:
                 print("Die: Invalid Value")
         
@@ -3250,9 +3278,9 @@ class diagCmdLibClass(object):
         #seq = [CMD3, 0x5C, 0xC5, 0x55, ADDR1, 0xFF, DATA_IN, 0, 1, 0, CMD1, 0x55, ADDR1, 0x01, DATA_IN, 0, 1, 0xF,  CMD1, 0x55, ADDR1, 0xFF, DATA_IN, 0, 1, 0, CMD1, 0xCA, WAIT_RB, CMD3, 0x5C, 0xC5, 0x55, ADDR1, 0xFF, DATA_IN, 0, 1, 0, CMD1, 0x55, ADDR1, 1, DATA_IN, 0, 1, 2, CMD1, 0x55, ADDR1, 0xFF, DATA_IN, 0, 1, 0, CMD1, 0xAA, WAIT_RB, CMD2, 0x4c, 0x05, ADDR5, 0x00, 0x00, 0x00, 0x00, ad5, CMD1, 0xE0, DELAY, 0x0, 0x1, DATA_OUT, 0x47, 0xA0, CMD1, 0xFF, CMDEND]
         
         #FwSeqf
-        seq = [CMD2, die_no, 0xFF, WAIT_RB, CMD4, 0x5C, 0xC5, die_no, 0x56, ADDR1, 0xFF, DATA_IN, 0, 1, 0, CMD1, 0x56, ADDR1, 1, DATA_IN, 0, 1, 6, CMD1, 0xAA, WAIT_RB, CMD3, die_no, 0x4c, 0x05, ADDR5, 0x00, 0x00, 0x00, 0x00, ad5, CMD1, 0xE0, DELAY, 0x0, 0x1, DATA_OUT, 0x47, 0xA0, CMDEND]
+        seq = [CMD2, die_no, 0xFF, WAIT_RB, CMD4, 0x5C, 0xC5, die_no, 0x56, ADDR1, 0xFF, DATA_IN, 0, 1, 0, CMD1, 0x56, ADDR1, 1, DATA_IN, 0, 1, 6, CMD1, 0xAA, WAIT_RB, CMD3, die_no, 0x4c, 0x05, ADDR6, 0x00, 0x00, 0x00, 0x00, ad5, ad6, CMD1, 0xE0, DELAY, 0x0, 0x1, DATA_OUT, 0x47, 0xA0, CMDEND]
         
-        print ad5
+        #print ad5
         seqbuf = PyServiceWrap.Buffer.CreateBuffer(1, patternType=PyServiceWrap.ALL_0, isSector=True)
         for idx, sq in enumerate(seq):
             seqbuf.SetByte(idx, sq)
